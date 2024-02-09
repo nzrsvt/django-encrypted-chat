@@ -22,16 +22,23 @@
 
 {% block js_script %}
 <script>
-    // setup chat scoket
+    // setup chat socket
+    //const chatSocket = new WebSocket(
+    //    'ws://'
+    //    + window.location.host
+    //    + '/ws/chat/public_room/'
+    //);
+
+    const user_id = '123';
     const chatSocket = new WebSocket(
         'ws://'
         + window.location.host
-        + '/ws/chat/public_room/'
+        + `/ws/chat/private/${user_id}/`
     );
 
     // on socket open
     chatSocket.onopen = function (e) {
-        console.log('Chat socket successfully connected.');
+        console.log('Chat socket successfully connected. user_id=' + user_id);
     };
 
     // on socket close
