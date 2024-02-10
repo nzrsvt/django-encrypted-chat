@@ -1,75 +1,59 @@
 import json
-from asgiref.sync import async_to_sync
-from channels.generic.websocket import WebsocketConsumer
+from channels.generic.websocket import AsyncWebsocketConsumer
+from .models import Message
+from django.contrib.contenttypes.models import ContentType
+from .models import Message, PrivateChat, GroupChat
+from channels.db import database_sync_to_async
 
+class PrivateChatConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.chat_id = self.scope['url_route']['kwargs']['chat_id']
+        self.chat_group_name = f"private_chat_{self.chat_id}"
 
-class ChatConsumer(WebsocketConsumer):
-    def connect(self):
-        self.room_name = 'public_room'
-        self.room_group_name = self.room_name
-        # Join room group
-        async_to_sync(self.channel_layer.group_add)(
-            self.room_group_name, self.channel_name
-        )
-        self.accept()
-
-    def disconnect(self, code):
-        # Leave room group
-        async_to_sync(self.channel_layer.group_discard)(
-            self.room_group_name, self.channel_name
-        )
-
-    def receive(self, text_data):
-        json_text = json.loads(text_data)
-        message = json_text["message"]
-
-        # Send message to room group
-        async_to_sync(self.channel_layer.group_send)(
-            self.room_group_name,
-            {
-                "type": "chat_message",
-                "message": message
-            }
-        )
-
-    def chat_message(self, event):
-        message = event['message']
-
-        # Send message to WebSocket
-        self.send(text_data=json.dumps({"message": message}))
-
-class PrivateChatConsumer(WebsocketConsumer):
-    def connect(self):
-        self.room_name = self.scope['url_route']['kwargs']['user_id']
-        self.room_group_name = f'private_chat_{self.room_name}'
-
-        async_to_sync(self.channel_layer.group_add)(
-            self.room_group_name,
-            self.channel_name
-        )
-        self.accept()
-
-    def disconnect(self, close_code):
-        async_to_sync(self.channel_layer.group_discard)(
-            self.room_group_name,
+        await self.channel_layer.group_add(
+            self.chat_group_name,
             self.channel_name
         )
 
-    def receive(self, text_data):
-        text_data_json = json.loads(text_data)
-        message = text_data_json['message']
+        await self.accept()
 
-        async_to_sync(self.channel_layer.group_send)(
-            self.room_group_name,
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(
+            self.chat_group_name,
+            self.channel_name
+        )
+
+    @database_sync_to_async
+    def create_message(self, message_text):
+        message = Message.objects.create(
+            text=message_text,
+            content_type=ContentType.objects.get_for_model(PrivateChat),
+            object_id=self.chat_id,
+            owner=self.scope['user']
+        )
+        return message
+
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        message_text = data['message']
+
+        # save the message to the database asynchronously
+        message = await self.create_message(message_text)
+
+        await self.channel_layer.group_send(
+            self.chat_group_name,
             {
                 'type': 'chat.message',
-                'message': message
+                'message': message_text,
+                'username': self.scope['user'].username
             }
         )
 
-    def chat_message(self, event):
+    async def chat_message(self, event):
         message = event['message']
+        username = event['username']
 
-        self.send(text_data=json.dumps({
-            'message': message
+        await self.send(text_data=json.dumps({
+            'message': message,
+            'username': username
         }))
