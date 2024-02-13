@@ -5,7 +5,13 @@
 
 <div id="messages">
     {% for message in messages %}
-        <p><strong>{{ message.owner.username }}:</strong> {{ message.text }}</p>
+        <p>
+            <strong>{{ message.owner.username }}:</strong>
+            {{ message.text }}
+            {% if message.owner == user %}
+                <button class="delete-message" data-message-id="{{ message.id }}">Delete</button>
+            {% endif %}
+        </p>
     {% endfor %}
 </div>
 
@@ -14,7 +20,6 @@
     <textarea id="textMessage" class="form-control" placeholder="Type your message"></textarea>
 </div>
 <button id="addMessage" class="btn btn-primary rounded-1">Send</button>
-
 <script>
     const chatSocket = new WebSocket(
         'ws://' + window.location.host +
@@ -25,11 +30,19 @@
         const data = JSON.parse(e.data);
         const message = data['message'];
         const username = data['username'];
+        const messageId = data['message_id'];
 
-        // update the chat interface with the new message
-        const messageElement = document.createElement('p');
-        messageElement.innerHTML = '<strong>' + username + ':</strong> ' + message;
-        document.querySelector('#messages').appendChild(messageElement);
+        if (message !== undefined) {
+            const messageElement = document.createElement('p');
+            messageElement.innerHTML = '<strong>' + username + ':</strong> ' + message;
+
+            if (username === '{{ user.username }}') {
+                // If the message is from the current user, add delete button
+                messageElement.appendChild(createDeleteButton(messageId));
+            }
+
+            document.querySelector('#messages').appendChild(messageElement);
+        } 
     };
 
     document.querySelector('#addMessage').onclick = function () {
@@ -39,6 +52,30 @@
             'message': message
         }));
         textMessageElement.value = '';
+    };
+
+    document.querySelector('#messages').addEventListener('click', function (event) {
+        if (event.target.classList.contains('delete-message')) {
+            const messageId = event.target.getAttribute('data-message-id');
+            chatSocket.send(JSON.stringify({
+                'delete_message': messageId
+            }));
+            event.target.parentElement.remove();
+        }
+    });
+
+    const createDeleteButton = function (messageId) {
+        const button = document.createElement('button');
+        button.className = 'delete-message';
+        button.setAttribute('data-message-id', messageId);
+        button.innerText = 'Delete';
+        button.onclick = function () {
+            const messageId = button.getAttribute('data-message-id');
+            chatSocket.send(JSON.stringify({
+                'delete_message': messageId
+            }));
+        };
+        return button;
     };
 </script>
 {% endblock %}

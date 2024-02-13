@@ -4,13 +4,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse, reverse_lazy
+from django.http import HttpResponseRedirect
 
 from .models import Message, PrivateChat, GroupChat
 
 # Create your views here.
-def index(request):
-    return render(request, 'index.html')
-
 class PrivateChatView(LoginRequiredMixin, View):
     template_name = "chatapp/private_chat.html"
     def get(self, request, pk):
@@ -30,3 +29,7 @@ class PrivateChatView(LoginRequiredMixin, View):
         ctx = {'user': request.user, 'interlocutor': interlocutor, 'messages': messages, 'chat_id': private_chat.id}
 
         return render(request, self.template_name, ctx)
+    def post(self, request, pk) :
+        m = get_object_or_404(Message, id=pk)
+        m.delete()
+        return HttpResponseRedirect(request.META['HTTP_REFERER'])

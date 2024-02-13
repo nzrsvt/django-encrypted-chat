@@ -35,25 +35,51 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        message_text = data['message']
+        message_text = data.get('message')
+        delete_message_id = data.get('delete_message')
 
-        # save the message to the database asynchronously
-        message = await self.create_message(message_text)
+        if message_text:
+            # Save the message to the database asynchronously
+            message = await self.create_message(message_text)
 
+            await self.channel_layer.group_send(
+                self.chat_group_name,
+                {
+                    'type': 'chat.message',
+                    'message': message_text,
+                    'username': self.scope['user'].username,
+                    'message_id': message.id  # Pass the message ID
+                }
+            )
+        elif delete_message_id:
+            # Delete the message
+            await self.delete_message(delete_message_id)
+
+    async def delete_message(self, message_id):
+        message = await database_sync_to_async(Message.objects.get)(id=message_id)
+        await database_sync_to_async(message.delete)()
         await self.channel_layer.group_send(
             self.chat_group_name,
             {
-                'type': 'chat.message',
-                'message': message_text,
-                'username': self.scope['user'].username
+                'type': 'chat.message.deleted',
+                'message_id': message_id,
             }
         )
 
     async def chat_message(self, event):
         message = event['message']
         username = event['username']
+        message_id = event['message_id']  # Retrieve the message ID
 
         await self.send(text_data=json.dumps({
             'message': message,
-            'username': username
+            'username': username,
+            'message_id': message_id  # Pass the message ID
+        }))
+
+    async def chat_message_deleted(self, event):
+        message_id = event['message_id']
+
+        await self.send(text_data=json.dumps({
+            'delete_message': message_id
         }))
