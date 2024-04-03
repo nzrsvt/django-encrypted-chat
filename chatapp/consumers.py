@@ -23,7 +23,6 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
-    # Receive message from WebSocket
     async def receive(self, text_data):
         data = json.loads(text_data)
         message_text = data.get('message')

@@ -9,7 +9,6 @@ from django.http import HttpResponseRedirect
 
 from .models import Message, PrivateChat, GroupChat
 
-# Create your views here.
 class PrivateChatView(LoginRequiredMixin, View):
     template_name = "chatapp/private_chat.html"
     def get(self, request, pk):
@@ -33,3 +32,4 @@ class PrivateChatView(LoginRequiredMixin, View):
         m = get_object_or_404(Message, id=pk)
         m.delete()
         return HttpResponseRedirect(request.META['HTTP_REFERER'])
+    
