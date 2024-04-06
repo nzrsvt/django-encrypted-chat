@@ -1,3 +1,12 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
+from django.db import models
 
-# Create your models here.
+class Profile(AbstractUser):
+    is_online = models.BooleanField(default=False)
+    last_seen = models.DateTimeField(null=True, blank=True)
+
+    def update_last_seen(self):
+        self.last_seen = timezone.now()
+        self.save()

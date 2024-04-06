@@ -1,0 +1,11 @@
+{% extends "base_menu.html" %}
+{% load app_tags %}
+{% block content %}
+<h1>Profile Details</h1>
+
+<p>Username: {{ profile.username }}</p>
+<p>Email: {{ profile.email }}</p>
+
+<img src="{{ profile|gravatar:256 }}" alt="Gravatar" />
+
+{% endblock %}
