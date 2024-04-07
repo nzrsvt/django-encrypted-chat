@@ -8,4 +8,12 @@
 
 <img src="{{ profile|gravatar:256 }}" alt="Gravatar" />
 
+{% if is_online %}
+    <p>User is online</p>
+{% elif is_online == False %}
+    <p>Last seen {{ profile.last_seen }}</p>
+{% else %}
+    <p>User has never been online</p>
+{% endif %}
+
 {% endblock %}

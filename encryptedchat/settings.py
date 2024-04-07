@@ -60,7 +60,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'encryptedchat.middleware.UpdateLastSeenMiddleware',
-    'encryptedchat.middleware.MarkInactiveMiddleware',
 ]
 
 ROOT_URLCONF = 'encryptedchat.urls'
