@@ -5,6 +5,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.auth import get_user_model
+from homeapp.models import Profile
 
 class Message(models.Model):
     text = models.TextField(
@@ -15,7 +16,7 @@ class Message(models.Model):
     object_id = models.PositiveIntegerField()
     chat = GenericForeignKey('content_type', 'object_id')
 
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    owner = models.ForeignKey(Profile, on_delete=models.CASCADE)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -26,7 +27,7 @@ class Message(models.Model):
         return self.text[:11] + ' ...'
 
 class PrivateChat(models.Model):
-    participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='chat_participants')
+    participants = models.ManyToManyField(Profile, related_name='chat_participants')
 
     messages = GenericRelation(Message)
 
@@ -44,7 +45,7 @@ class GroupChat(PrivateChat):
     picture = models.BinaryField(null=True, editable=True)
     content_type = models.CharField(max_length=256, null=True, help_text='The MIMEType of the file')
 
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    owner = models.ForeignKey(Profile, on_delete=models.CASCADE)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

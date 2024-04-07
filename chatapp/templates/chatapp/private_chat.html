@@ -8,7 +8,7 @@
         <p data-message-id="{{ message.id }}">
             <strong>{{ message.owner.username }}:</strong>
             {{ message.text }}
-            {% if message.owner == user %}
+            {% if message.owner == profile %}
                 <button class="delete-message" data-delete-message-id="{{ message.id }}" onclick="deleteMessage(this)">
                     Delete
                 </button>
@@ -40,7 +40,7 @@
 
             messageElement.setAttribute('data-message-id', messageId);
 
-            if (username === '{{ user.username }}') {
+            if (username === '{{ profile.username }}') {
                 messageElement.appendChild(createDeleteButton(messageId));
             }
 
